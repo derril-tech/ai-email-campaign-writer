@@ -1,0 +1,268 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai_email_postgres
+    environment:
+      POSTGRES_DB: ai_email_campaign
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ai_email_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: ai_email_redis
+    command: redis-server --appendonly yes --requirepass redis_password
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - ai_email_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ai_email_backend
+    environment:
+      # Database
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres_password@postgres:5432/ai_email_campaign
+      POSTGRES_SERVER: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: ai_email_campaign
+      POSTGRES_PORT: 5432
+      
+      # Redis
+      REDIS_URL: redis://:redis_password@redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      
+      # Security
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      
+      # CORS
+      BACKEND_CORS_ORIGINS: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000
+      
+      # Email Configuration
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: your-email@gmail.com
+      SMTP_PASSWORD: your-app-password
+      SMTP_TLS: true
+      SMTP_SSL: false
+      
+      # AI Services
+      OPENAI_API_KEY: your-openai-api-key
+      ANTHROPIC_API_KEY: your-anthropic-api-key
+      OPENAI_MODEL: gpt-4
+      ANTHROPIC_MODEL: claude-3-sonnet-20240229
+      
+      # SendGrid (Alternative)
+      SENDGRID_API_KEY: your-sendgrid-api-key
+      SENDGRID_FROM_EMAIL: your-email@yourdomain.com
+      
+      # File Storage
+      STORAGE_TYPE: local
+      UPLOAD_DIR: uploads
+      MAX_FILE_SIZE: 10485760
+      
+      # AWS S3 (if using S3 storage)
+      AWS_ACCESS_KEY_ID: your-aws-access-key
+      AWS_SECRET_ACCESS_KEY: your-aws-secret-key
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: your-s3-bucket
+      
+      # Cloudinary (if using Cloudinary storage)
+      CLOUDINARY_CLOUD_NAME: your-cloud-name
+      CLOUDINARY_API_KEY: your-api-key
+      CLOUDINARY_API_SECRET: your-api-secret
+      
+      # Stripe (for payments)
+      STRIPE_SECRET_KEY: your-stripe-secret-key
+      STRIPE_PUBLISHABLE_KEY: your-stripe-publishable-key
+      STRIPE_WEBHOOK_SECRET: your-stripe-webhook-secret
+      
+      # Monitoring
+      SENTRY_DSN: your-sentry-dsn
+      LOG_LEVEL: INFO
+      
+      # Rate Limiting
+      RATE_LIMIT_PER_MINUTE: 60
+      RATE_LIMIT_PER_HOUR: 1000
+      
+      # Background Tasks
+      CELERY_BROKER_URL: redis://:redis_password@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:redis_password@redis:6379/2
+      
+      # WebSocket
+      WS_MESSAGE_QUEUE_URL: redis://:redis_password@redis:6379/3
+      
+      # Application Settings
+      DEBUG: true
+      APP_NAME: AI Email Campaign Writer
+      APP_VERSION: 1.0.0
+      API_V1_STR: /api/v1
+      
+      # Email Campaign Limits
+      MAX_RECIPIENTS_PER_CAMPAIGN: 10000
+      MAX_CAMPAIGNS_PER_USER: 100
+      MAX_EMAILS_PER_DAY: 50000
+      
+      # AI Generation Limits
+      MAX_AI_REQUESTS_PER_HOUR: 100
+      MAX_AI_REQUESTS_PER_DAY: 1000
+    volumes:
+      - .:/app
+      - uploads:/app/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ai_email_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Celery Worker for Background Tasks
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ai_email_celery_worker
+    command: celery -A app.core.celery worker --loglevel=info
+    environment:
+      # Same environment variables as backend
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres_password@postgres:5432/ai_email_campaign
+      REDIS_URL: redis://:redis_password@redis:6379/0
+      CELERY_BROKER_URL: redis://:redis_password@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:redis_password@redis:6379/2
+      SECRET_KEY: your-secret-key-change-in-production
+      OPENAI_API_KEY: your-openai-api-key
+      ANTHROPIC_API_KEY: your-anthropic-api-key
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: your-email@gmail.com
+      SMTP_PASSWORD: your-app-password
+      DEBUG: true
+    volumes:
+      - .:/app
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ai_email_network
+    restart: unless-stopped
+
+  # Celery Beat for Scheduled Tasks
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ai_email_celery_beat
+    command: celery -A app.core.celery beat --loglevel=info
+    environment:
+      # Same environment variables as backend
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres_password@postgres:5432/ai_email_campaign
+      REDIS_URL: redis://:redis_password@redis:6379/0
+      CELERY_BROKER_URL: redis://:redis_password@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:redis_password@redis:6379/2
+      SECRET_KEY: your-secret-key-change-in-production
+      DEBUG: true
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ai_email_network
+    restart: unless-stopped
+
+  # Flower for Celery Monitoring
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ai_email_flower
+    command: celery -A app.core.celery flower --port=5555
+    environment:
+      CELERY_BROKER_URL: redis://:redis_password@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:redis_password@redis:6379/2
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ai_email_network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: ai_email_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - ai_email_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  ai_email_network:
+    driver: bridge

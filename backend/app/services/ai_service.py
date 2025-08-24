@@ -1,6 +1,15 @@
 """
 AI Service for Email Campaign Generation
-Integrates LangChain, CrewAI, LangGraph, and AutoGen for comprehensive email creation
+Integrates multiple AI frameworks for comprehensive email creation:
+
+- LangChain: Core orchestration, model selection, prompt management
+- LangGraph: Complex workflow orchestration, quality gates, A/B testing
+- CrewAI: Multi-agent collaboration (strategist, writer, brand specialist)
+- LlamaIndex: RAG for brand guidelines and historical data
+- AutoGen: Human-in-the-loop interactions and approvals
+- pgvector: Vector embeddings for brand voice similarity search
+
+See docs/AI_FRAMEWORKS_SPECIFICATION.md for detailed usage patterns.
 """
 
 import asyncio
@@ -9,6 +18,8 @@ from datetime import datetime
 import json
 
 # Core AI Frameworks
+# NOTE: These imports represent the 20% implementation for Claude
+# Linter errors are expected and will be resolved during implementation
 from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from langchain.schema import HumanMessage, SystemMessage
 from langchain.prompts import ChatPromptTemplate
@@ -16,6 +27,8 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.memory import ConversationBufferMemory
 
 # Advanced Frameworks
+# NOTE: These imports represent the 20% implementation for Claude
+# Linter errors are expected and will be resolved during implementation
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 import autogen
@@ -29,9 +42,9 @@ from app.models.campaign import Campaign
 from app.schemas.ai import (
     AIGenerationRequest,
     AIGenerationResponse,
-    EmailContent,
-    SubjectLineVariation,
-    CampaignStrategy
+    EmailContent,  # NOTE: To be implemented by Claude
+    SubjectLineVariation,  # NOTE: To be implemented by Claude
+    CampaignStrategy  # NOTE: To be implemented by Claude
 )
 
 class AIService:

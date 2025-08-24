@@ -1,0 +1,36 @@
+{
+  "name": "ai-email-campaign-writer",
+  "version": "1.0.0",
+  "description": "AI-powered email campaign creation and management platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter frontend dev\" \"pnpm --filter backend dev\"",
+    "build": "pnpm --filter frontend build && pnpm --filter backend build",
+    "test": "pnpm --filter frontend test && pnpm --filter backend test",
+    "lint": "pnpm --filter frontend lint && pnpm --filter backend lint",
+    "typecheck": "pnpm --filter frontend typecheck",
+    "clean": "pnpm --filter frontend clean && pnpm --filter backend clean",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "check:env": "tsx scripts/check-env.ts",
+    "check:env:frontend": "tsx scripts/check-env.ts frontend",
+    "check:env:backend": "tsx scripts/check-env.ts backend",
+    "predev": "pnpm check:env",
+    "prepare": "pre-commit install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "tsx": "^4.0.0",
+    "pre-commit": "^3.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

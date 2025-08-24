@@ -1,14 +1,20 @@
 # 🤖 Claude AI Collaboration Guide - AI Email Campaign Writer
 
+> **⚠️ SINGLE SOURCE OF TRUTH** - This is the definitive guide for Claude AI collaboration. All other Claude instruction files have been consolidated into this document.
+
 ## 🎯 **Project Overview**
 
-**PulseQuill** is an enterprise-grade AI email campaign writer that orchestrates GPT-4 + Claude for best-of-breed copy and brand consistency. The platform enables Fortune 500 growth, lifecycle, and CRM teams to create, personalize, and optimize email campaigns at scale with real-time analytics and predictive optimization.
+**PulseQuill** is a legendary, enterprise-grade AI for writing, personalizing, and optimizing email at scale. **Write. Personalize. Ship. Learn — in real time.**
+
+The platform orchestrates GPT-4 + Claude for best-of-breed copy and brand consistency, enabling Fortune 500 growth, lifecycle, and CRM teams to create, personalize, and optimize email campaigns with real-time analytics and predictive optimization.
 
 ### **Core Value Proposition**
-- **Multi-model AI orchestration** for optimal content generation
-- **Real-time analytics** with predictive optimization
+- **Multi-model AI orchestration** for optimal content generation (GPT-4 + Claude)
+- **Real-time analytics** with predictive optimization and A/B testing
 - **Enterprise compliance** (SOC 2, GDPR, CAN-SPAM)
 - **Production-ready infrastructure** with 99.9% uptime SLA
+- **Mustache.js templating** with dynamic personalization
+- **pgvector** for brand voice consistency and copy corpus
 
 ### **Target Users**
 - Fortune 500 marketing teams
@@ -37,19 +43,30 @@
 
 ### **Backend**
 - **Framework**: FastAPI (Python 3.9+)
-- **Database**: PostgreSQL 15 with SQLAlchemy 2.0
-- **Cache**: Redis
+- **Database**: PostgreSQL 15 with SQLAlchemy 2.0 + pgvector
+- **Cache**: Redis (sessions, analytics, rate limiting)
 - **AI Models**: OpenAI GPT-4, Anthropic Claude
-- **AI Frameworks**: LangChain, CrewAI, LangGraph, AutoGen, LlamaIndex
+- **AI Frameworks**: 
+  - **LangChain**: Core orchestration, model selection, prompt management
+  - **LangGraph**: Complex workflow orchestration, quality gates, A/B testing
+  - **CrewAI**: Multi-agent collaboration (strategist, writer, brand specialist)
+  - **LlamaIndex**: RAG for brand guidelines and historical data
+  - **AutoGen**: Human-in-the-loop interactions and approvals
+  - **pgvector**: Vector embeddings for brand voice similarity search
 - **Authentication**: JWT with refresh tokens
-- **Email**: SendGrid
-- **Background Tasks**: Celery
+- **Email**: SendGrid with retry + suppression handling
+- **Background Tasks**: Celery + Redis
+- **Templating**: Mustache.js with dynamic variables
+- **Real-time**: WebSocket (Socket.io) over ASGI
+
+> 📋 **See `docs/AI_FRAMEWORKS_SPECIFICATION.md` for detailed framework usage and integration patterns.**
 
 ### **Infrastructure**
 - **Deployment**: Vercel (Frontend), Render (Backend)
-- **Database**: Managed PostgreSQL
-- **Cache**: Redis Cloud
+- **Database**: Managed PostgreSQL with pgvector
+- **Cache**: Redis Cloud (sessions, analytics, rate limiting)
 - **Monitoring**: Sentry, Prometheus, Grafana
+- **Storage**: Cloud object storage for assets
 
 ## 📁 **Folder & File Structure**
 
@@ -222,11 +239,94 @@ class CampaignResponse(BaseModel):
 - **Context preservation**: Always include surrounding context
 - **Backward compatibility**: Maintain existing API contracts
 
+### **Patch Protocol**
+**IMPORTANT**: All code changes must follow this exact format:
+
+```diff
+// Example patch format
+- const oldCode = "outdated";
++ const newCode = "updated";
+```
+
+**Commit Message Format**:
+```
+feat: add email preview functionality
+
+- Add EmailPreview component with iframe rendering
+- Support Gmail, Outlook, Apple Mail preview modes
+- Add client-specific CSS for accurate rendering
+- Include accessibility attributes for screen readers
+
+Fixes: #123
+```
+
+**Patch Requirements**:
+- Include 3-5 lines of context before and after changes
+- Use clear, descriptive commit messages
+- Reference issue numbers when applicable
+- Test changes before submitting
+
 ### **Ambiguity Handling**
 - **Ask clarifying questions** when requirements are unclear
 - **Provide multiple options** when there are different approaches
 - **Document assumptions** made during implementation
 - **Suggest improvements** for better user experience
+
+### **Failure-Mode Playbook**
+
+#### **Schema Mismatch**
+```bash
+# Frontend TypeScript errors
+pnpm typecheck
+# Fix: Update types in packages/types/src/
+
+# Backend Pydantic validation errors
+pytest tests/ -v
+# Fix: Update schemas in backend/app/schemas/
+```
+
+#### **Failing Tests**
+```bash
+# Frontend tests
+pnpm test
+# Fix: Update component logic or test expectations
+
+# Backend tests
+cd backend && pytest
+# Fix: Update business logic or mock data
+```
+
+#### **Missing Environment Variables**
+```bash
+# Check environment setup
+pnpm check:env
+# Fix: Add missing variables to .env.example and .env.local
+```
+
+#### **Build Failures**
+```bash
+# Frontend build
+pnpm build
+# Fix: Resolve TypeScript errors, missing dependencies
+
+# Backend build
+cd backend && python -m build
+# Fix: Resolve import errors, missing packages
+```
+
+#### **Database Migration Issues**
+```bash
+# Check migration status
+cd backend && alembic current
+# Fix: Create new migration or rollback problematic changes
+```
+
+#### **API Contract Violations**
+```bash
+# Validate OpenAPI spec
+cd backend && python -m pytest tests/test_openapi.py
+# Fix: Update API endpoints to match specification
+```
 
 ### **Code Quality Standards**
 - **Type safety**: Full TypeScript/Python type coverage
@@ -234,6 +334,45 @@ class CampaignResponse(BaseModel):
 - **Performance**: Optimize for speed and efficiency
 - **Accessibility**: WCAG AA compliance for all UI components
 - **Security**: Follow security best practices
+
+### **START/END Guardrails**
+**IMPORTANT**: Use these guardrails in editable files to mark Claude's work:
+
+```typescript
+// frontend/components/CampaignEditor.tsx
+// ... existing code ...
+
+// START: Claude Edit - Email Preview Feature
+export function EmailPreview({ htmlContent }: { htmlContent: string }) {
+  // Claude's implementation here
+}
+// END: Claude Edit - Email Preview Feature
+
+// ... existing code ...
+```
+
+```python
+# backend/app/api/campaigns.py
+# ... existing code ...
+
+# START: Claude Edit - Campaign Analytics Endpoint
+@router.get("/campaigns/{campaign_id}/analytics")
+async def get_campaign_analytics(
+    campaign_id: str,
+    db: Session = Depends(get_db)
+) -> CampaignAnalytics:
+    # Claude's implementation here
+    pass
+# END: Claude Edit - Campaign Analytics Endpoint
+
+# ... existing code ...
+```
+
+**Guardrail Rules**:
+- Always include descriptive comments
+- Mark the exact start and end of Claude's work
+- Preserve existing code structure
+- Include context for the changes
 
 ## 🔧 **Dependencies & Setup**
 
@@ -306,16 +445,22 @@ alembic upgrade head
 - **Brand Consistency**: AI-generated content must match brand guidelines
 
 ### **Technical Constraints**
-- **Token Limits**: AI models have 2000 token generation limits
+- **Token Limits**: ≤ 2000 tokens per generation (hard stop + auto-trim)
+- **Temperature Policy**: 0.3 (compliance) → 0.9 (creative), dynamic based on context
 - **API Rate Limits**: Respect OpenAI/Anthropic rate limits
-- **Database Performance**: Optimize queries for large datasets
-- **Real-time Updates**: WebSocket connections for live analytics
+- **Database Performance**: Optimize queries for large datasets, pgvector for embeddings
+- **Real-time Updates**: WebSocket (Socket.io) for live analytics and campaign status
+- **Templating**: Mustache.js with dynamic variables and validation
+- **Email Compatibility**: Gmail, Outlook, Apple Mail, Yahoo with VML fallbacks
 
 ### **Domain Rules**
-- **Campaign States**: draft → scheduled → sending → completed/failed
+- **Campaign States**: draft → scheduled → sending → paused → completed/failed
 - **User Roles**: admin, user, premium with different permissions
 - **Audience Segments**: Dynamic segmentation based on user behavior
-- **A/B Testing**: Statistical significance required for winner selection
+- **A/B Testing**: Two-proportion z-test with Wilson 95% CI, sequential monitoring guard
+- **Templating**: Mustache.js with dynamic variables ({{first_name}}, {{last_seen_at}})
+- **Brand Voice**: pgvector embeddings for copy corpus and consistency
+- **Analytics**: Real-time WebSocket events (send, deliver, open, click, bounce, spam, unsubscribe)
 
 ## 📚 **Examples**
 

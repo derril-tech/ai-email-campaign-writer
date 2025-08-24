@@ -10,10 +10,23 @@ This repository contains a full-stack AI-powered email campaign writer built wit
 ai-email-campaign-writer/
 ├── 📁 frontend/           # Next.js 14 frontend application
 ├── 📁 backend/            # FastAPI backend application  
+├── 📁 packages/           # Shared packages (monorepo)
+│   ├── 📁 ui/            # Shared UI components and design system
+│   └── 📁 types/         # Shared TypeScript types
 ├── 📁 docs/               # Documentation and instructions
+├── 📁 scripts/            # Development and testing scripts
+├── 📁 .github/            # GitHub Actions CI/CD workflows
+├── 📁 .devcontainer/      # VS Code Dev Container configuration
+├── 📄 pnpm-workspace.yaml # Monorepo workspace configuration
+├── 📄 package.json        # Root package.json with workspace scripts
+├── 📄 .pre-commit-config.yaml # Pre-commit hooks configuration
+├── 📄 docker-compose.dev.yml # Development Docker Compose
+├── 📄 .nvmrc              # Node.js version specification
+├── 📄 .editorconfig       # Editor configuration
+├── 📄 .gitattributes      # Git attributes
 ├── 📄 README.md           # Main project documentation
-├── 📄 API_SPEC.md         # API specification and endpoints
-├── 📄 CLAUDE_INSTRUCTIONS.md # Claude AI collaboration guidelines
+├── 📄 BASELINE.md         # Project baseline and requirements
+├── 📄 COMPLIANCE_AUDIT_REPORT.md # Compliance documentation
 └── 📄 REPO_MAD.md         # Repository management documentation
 ```
 
@@ -35,10 +48,14 @@ frontend/
 ├── 📁 hooks/              # Custom React hooks
 ├── 📁 lib/                # Utility libraries
 ├── 📁 types/              # TypeScript type definitions
+├── 📁 tests/              # Test files
+│   ├── 📁 e2e/           # Playwright E2E tests
+│   └── 📁 unit/          # Unit tests
 ├── 📄 package.json        # Frontend dependencies
 ├── 📄 tailwind.config.js  # Tailwind CSS configuration
 ├── 📄 tsconfig.json       # TypeScript configuration
-└── 📄 env.example         # Environment variables template
+├── 📄 playwright.config.ts # Playwright E2E testing configuration
+└── 📄 .env.example        # Environment variables template
 ```
 
 ### **Backend Structure** (`backend/`)
@@ -57,15 +74,58 @@ backend/
 │   │   ├── 📄 redis.py    # Redis configuration
 │   │   └── 📄 security.py # Security utilities
 │   ├── 📁 models/         # Database models
+│   │   ├── 📄 campaign.py # Campaign model
+│   │   ├── 📄 user.py     # User model
+│   │   ├── 📄 copy_corpus.py # Copy corpus model (pgvector)
+│   │   └── 📄 __init__.py
 │   ├── 📁 schemas/        # Pydantic schemas
 │   ├── 📁 services/       # Business logic services
+│   │   ├── 📄 ai_service.py # AI framework orchestration
+│   │   ├── 📄 email_service.py # Email sending service
+│   │   └── 📄 analytics_service.py # Analytics service
 │   ├── 📁 utils/          # Utility functions
 │   └── 📄 main.py         # FastAPI application entry point
+├── 📁 tests/              # Test files
+│   ├── 📁 unit/           # Unit tests
+│   ├── 📁 integration/    # Integration tests
+│   └── 📁 fixtures/       # Test data
 ├── 📄 requirements.txt    # Python dependencies
 ├── 📄 pyproject.toml      # Project configuration
 ├── 📄 Dockerfile          # Docker configuration
 ├── 📄 docker-compose.yml  # Docker Compose setup
-└── 📄 env.example         # Environment variables template
+├── 📄 openapi.yaml        # OpenAPI specification
+└── 📄 .env.example        # Environment variables template
+```
+
+### **Shared Packages Structure** (`packages/`)
+```
+packages/
+├── 📁 ui/                 # Shared UI components
+│   ├── 📁 src/            # Source code
+│   │   ├── 📄 tokens.ts   # Design tokens and theme
+│   │   ├── 📄 components/ # Shared components
+│   │   └── 📄 utils/      # Utility functions
+│   ├── 📄 package.json    # UI package dependencies
+│   └── 📄 tsconfig.json   # TypeScript configuration
+└── 📁 types/              # Shared TypeScript types
+    ├── 📁 src/            # Source code
+    │   ├── 📄 campaign.ts # Campaign types
+    │   ├── 📄 user.ts     # User types
+    │   └── 📄 api.ts      # API types
+    ├── 📄 package.json    # Types package dependencies
+    └── 📄 tsconfig.json   # TypeScript configuration
+```
+
+### **Scripts Structure** (`scripts/`)
+```
+scripts/
+├── 📁 load-tests/         # k6 load testing scripts
+│   ├── 📄 burst-sends.js  # Burst campaign creation tests
+│   ├── 📄 sustained-sends.js # Sustained load tests
+│   └── 📄 webhook-fan-in.js # Webhook processing tests
+├── 📄 check-env.ts        # Environment variable validation
+├── 📄 dev.sh              # Unix development script
+└── 📄 dev.bat             # Windows development script
 ```
 
 ### **Documentation Structure** (`docs/`)
@@ -74,7 +134,12 @@ docs/
 ├── 📄 REPO_MAP.md         # This file - repository structure guide
 ├── 📄 API_SPEC.md         # Detailed API specification
 ├── 📄 CLAUDE.md           # Claude AI collaboration guidelines
-└── 📄 PROMPT_DECLARATION.md # Project prompt for AI development
+├── 📄 PROMPT_DECLARATION.md # Project prompt for AI development
+├── 📄 PRODUCT_BRIEF.md    # Product specifications and requirements
+├── 📄 INFRASTRUCTURE_PLAN.md # 8-step infrastructure setup process
+├── 📄 AI_FRAMEWORKS_SPECIFICATION.md # AI framework usage guide
+├── 📄 SCREEN_ENDPOINT_DTO_MATRIX.md # Frontend-backend mapping
+└── 📄 README.md           # Documentation overview
 ```
 
 ## 🔧 **Technology Stack**
@@ -89,44 +154,57 @@ docs/
 - **Animations**: Framer Motion
 - **UI Components**: Headless UI, Radix UI
 - **Real-time**: Socket.io Client
+- **Testing**: Jest, React Testing Library, Playwright (E2E)
 
 ### **Backend Technologies**
-- **Framework**: FastAPI (Python 3.9+)
-- **Database**: PostgreSQL 15 with SQLAlchemy 2.0
+- **Framework**: FastAPI (Python 3.11+)
+- **Database**: PostgreSQL 15 with SQLAlchemy 2.0 + pgvector
 - **Cache**: Redis
 - **AI Models**: OpenAI GPT-4, Anthropic Claude
-- **AI Frameworks**: LangChain, CrewAI, LangGraph, AutoGen, LlamaIndex
+- **AI Frameworks**: 
+  - **LangChain**: Core orchestration, model selection, prompt management
+  - **LangGraph**: Complex workflow orchestration, quality gates, A/B testing
+  - **CrewAI**: Multi-agent collaboration (strategist, writer, brand specialist)
+  - **LlamaIndex**: RAG for brand guidelines and historical data
+  - **AutoGen**: Human-in-the-loop interactions and approvals
+  - **pgvector**: Vector embeddings for brand voice similarity search
 - **Authentication**: JWT with refresh tokens
-- **Email**: SendGrid
-- **Background Tasks**: Celery
-- **Monitoring**: Sentry, Loguru
+- **Email**: SendGrid with retry + suppression handling
+- **Background Tasks**: Celery + Redis
+- **Templating**: Mustache.js (pystache) with dynamic variables
+- **Real-time**: WebSocket (Socket.io) over ASGI
+- **Testing**: pytest, pytest-asyncio
 
 ### **Infrastructure**
 - **Deployment**: Vercel (Frontend), Render (Backend)
-- **Database**: Managed PostgreSQL
+- **Database**: Managed PostgreSQL with pgvector extension
 - **Cache**: Redis Cloud
 - **Storage**: Cloud object storage
-- **Monitoring**: Prometheus, Grafana
+- **Monitoring**: Sentry, Prometheus, Grafana
+- **CI/CD**: GitHub Actions with comprehensive testing
+- **Load Testing**: k6 for performance testing
+- **Development**: VS Code Dev Containers
 
 ## 🎯 **Key Features & Capabilities**
 
 ### **AI-Powered Content Generation**
 - Multi-model AI orchestration (GPT-4, Claude)
-- Brand voice consistency
+- Brand voice consistency with pgvector embeddings
 - Subject line optimization
 - Content personalization
 - A/B testing automation
+- Copy corpus management
 
 ### **Campaign Management**
 - Drag-and-drop email editor
-- Template management
+- Template management with Mustache.js
 - Audience segmentation
 - Campaign scheduling
 - Real-time analytics
 
 ### **Analytics & Optimization**
 - Real-time performance tracking
-- Predictive analytics
+- Predictive analytics with pgvector
 - Engagement scoring
 - ROI calculation
 - Automated optimization
@@ -137,24 +215,34 @@ docs/
 - SOC 2 compliance
 - GDPR compliance
 - API rate limiting
+- Load testing and performance monitoring
 
 ## 🚀 **Development Workflow**
 
 ### **Local Development**
-1. **Frontend**: `cd frontend && npm run dev`
-2. **Backend**: `cd backend && uvicorn app.main:app --reload`
-3. **Database**: PostgreSQL + Redis
-4. **AI Services**: OpenAI + Anthropic API keys required
+1. **Monorepo Setup**: `pnpm install` (installs all packages)
+2. **Frontend**: `pnpm dev:frontend` or `cd frontend && npm run dev`
+3. **Backend**: `pnpm dev:backend` or `cd backend && python -m uvicorn app.main:app --reload`
+4. **Database**: PostgreSQL + Redis (via Docker Compose)
+5. **AI Services**: OpenAI + Anthropic API keys required
 
 ### **Testing**
-- **Frontend**: `npm test` (Jest + Testing Library)
-- **Backend**: `pytest` (Unit + Integration tests)
-- **E2E**: Playwright for end-to-end testing
+- **Frontend Unit**: `pnpm test` (Jest + Testing Library)
+- **Frontend E2E**: `pnpm test:e2e` (Playwright)
+- **Backend**: `cd backend && pytest` (Unit + Integration tests)
+- **Load Testing**: `k6 run scripts/load-tests/`
+
+### **Quality Assurance**
+- **Pre-commit Hooks**: Automatic linting, formatting, type checking
+- **Environment Checks**: `pnpm check:env` validates all environment variables
+- **Bundle Size**: CI checks for frontend bundle size limits
+- **Load Testing**: CI runs k6 load tests on main branch
 
 ### **Deployment**
 - **Frontend**: Vercel (automatic from main branch)
 - **Backend**: Render (with health checks)
 - **Database**: Managed PostgreSQL with automated backups
+- **Monitoring**: Sentry for error tracking, Prometheus for metrics
 
 ## 📋 **File Ownership & Editing Rules**
 
@@ -167,21 +255,28 @@ docs/
 - `backend/app/services/` - Business logic
 - `backend/app/models/` - Database models
 - `backend/app/schemas/` - Pydantic schemas
+- `packages/ui/src/components/` - Shared UI components
+- `packages/types/src/` - Shared TypeScript types
 
 ### **⚠️ Review Required**
 - `frontend/package.json` - Dependencies
 - `backend/requirements.txt` - Python dependencies
 - `frontend/tailwind.config.js` - Styling configuration
 - `backend/app/core/config.py` - Application settings
+- `packages/ui/package.json` - Shared UI dependencies
+- `packages/types/package.json` - Shared types dependencies
 
 ### **🚫 Do Not Touch**
 - `docs/` - Documentation files (except when explicitly requested)
 - `README.md` - Main project documentation
 - `API_SPEC.md` - API specification
-- `CLAUDE_INSTRUCTIONS.md` - Claude guidelines
+- `CLAUDE.md` - Claude guidelines
 - `.gitignore` - Git ignore rules
 - `Dockerfile` - Docker configuration
 - `docker-compose.yml` - Docker Compose setup
+- `.github/workflows/` - CI/CD configuration
+- `.pre-commit-config.yaml` - Pre-commit hooks
+- `pnpm-workspace.yaml` - Monorepo configuration
 
 ## 🎨 **Design System**
 
@@ -198,80 +293,61 @@ docs/
 - **Scale**: 1.25 modular scale
 
 ### **Spacing**
-- **Grid**: 4px increments (4, 8, 16, 24, 32, 48, 64)
+- **Base Unit**: 4px
+- **Scale**: 0.25rem, 0.5rem, 0.75rem, 1rem, 1.25rem, 1.5rem, 2rem, 2.5rem, 3rem
 
-### **Breakpoints**
-- **Mobile**: 320px
-- **Tablet**: 768px
-- **Desktop**: 1024px
-- **Large**: 1440px
+### **Design Tokens**
+All design tokens are centralized in `packages/ui/src/tokens.ts` and follow the product brief specifications.
 
-## 🔒 **Security & Compliance**
+## 🔄 **Monorepo Workflow**
 
-### **Authentication**
-- JWT tokens (15-minute access, 7-day refresh)
-- bcrypt password hashing (cost 12)
-- Two-factor authentication support
+### **Package Management**
+- **Root**: `pnpm install` installs all workspace packages
+- **Frontend**: `pnpm --filter frontend add <package>`
+- **Backend**: `cd backend && pip install <package>`
+- **UI Package**: `pnpm --filter @ai-email/ui add <package>`
+- **Types Package**: `pnpm --filter @ai-email/types add <package>`
 
-### **API Security**
-- Rate limiting (100/min, 1000/hr, 10000/day)
-- CORS allowlist
-- HSTS headers
-- Input validation with Pydantic
+### **Development Scripts**
+- **Start All**: `pnpm dev` (starts frontend and backend)
+- **Frontend Only**: `pnpm dev:frontend`
+- **Backend Only**: `pnpm dev:backend`
+- **Build All**: `pnpm build`
+- **Test All**: `pnpm test`
+- **Lint All**: `pnpm lint`
 
-### **Data Protection**
-- AES-256 encryption at rest
-- TLS 1.3 in transit
-- GDPR-compliant data handling
-- SOC 2 controls
+### **Shared Dependencies**
+- **UI Components**: Import from `@ai-email/ui`
+- **Types**: Import from `@ai-email/types`
+- **Design Tokens**: Import from `@ai-email/ui/tokens`
 
-### **Email Security**
-- SPF, DKIM, DMARC configuration
-- CAN-SPAM compliance
-- Unsubscribe handling
-- Suppression list management
+## 🧪 **Testing Strategy**
 
-## 📊 **Performance Targets**
+### **Frontend Testing**
+- **Unit Tests**: Jest + React Testing Library for components
+- **E2E Tests**: Playwright for critical user journeys
+- **Visual Regression**: Playwright for UI consistency
+- **Performance**: Lighthouse CI for performance monitoring
 
-### **Frontend**
-- Lighthouse score ≥ 90
-- Initial bundle < 500KB
-- Time to Interactive < 3s
-- Core Web Vitals compliance
+### **Backend Testing**
+- **Unit Tests**: pytest for business logic
+- **Integration Tests**: pytest-asyncio for API endpoints
+- **Database Tests**: Test database models and migrations
+- **AI Tests**: Mock AI service responses
 
-### **Backend**
-- p95 response time < 200ms
-- Complex queries < 50ms
-- Background job processing
-- Database connection pooling
+### **Load Testing**
+- **Burst Tests**: k6 scripts for sudden traffic spikes
+- **Sustained Tests**: k6 scripts for continuous load
+- **Webhook Tests**: k6 scripts for webhook processing
+- **CI Integration**: Load tests run on main branch
 
-### **Email Delivery**
-- Delivery rate > 98%
-- Bounce rate < 2%
-- Spam score < 3
-- Automated retry logic
-
-## 🤝 **Collaboration Guidelines**
-
-### **Code Standards**
-- **Frontend**: ESLint + Prettier
-- **Backend**: Black + isort + flake8 + mypy
-- **Testing**: ≥90% coverage
-- **Documentation**: JSDoc + docstrings
-
-### **Git Workflow**
-- Feature branches from main
-- Pull request reviews required
-- Conventional commits
-- Automated testing on PR
-
-### **AI Collaboration**
-- Clear TODO markers
-- Folder-level instructions
-- Contextual comments
-- Progressive enhancement
+### **Quality Gates**
+- **Pre-commit**: Linting, formatting, type checking
+- **CI/CD**: Full test suite, build verification, security scans
+- **Performance**: Bundle size limits, load test thresholds
+- **Security**: Dependency scanning, code analysis
 
 ---
 
 **Last Updated**: December 2024
-**Version**: 1.0.0
+**Version**: 2.0.0 - Updated to reflect current monorepo infrastructure

@@ -94,3 +94,8 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[project.scripts]
+mock-server = "scripts.mock_server:main"
+seed-data = "scripts.seed_data:main"
+dev = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"

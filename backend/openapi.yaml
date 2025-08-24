@@ -1,0 +1,652 @@
+openapi: 3.1.0
+info:
+  title: AI Email Campaign Writer API
+  description: API for AI-powered email campaign creation and management
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@aiemailcampaign.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+  - url: https://api.aiemailcampaign.com/api/v1
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API is running
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-01T00:00:00Z"
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      description: Create a new user account
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: Login user
+      description: Authenticate user and get access token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /campaigns:
+    get:
+      summary: List campaigns
+      description: Get all campaigns for the authenticated user
+      tags:
+        - Campaigns
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          description: Filter by campaign status
+          required: false
+          schema:
+            type: string
+            enum: [draft, scheduled, sending, sent, paused]
+      responses:
+        '200':
+          description: List of campaigns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create campaign
+      description: Create a new email campaign
+      tags:
+        - Campaigns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreate'
+      responses:
+        '201':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /campaigns/{campaign_id}:
+    get:
+      summary: Get campaign
+      description: Get campaign details by ID
+      tags:
+        - Campaigns
+      parameters:
+        - name: campaign_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Campaign details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update campaign
+      description: Update campaign details
+      tags:
+        - Campaigns
+      parameters:
+        - name: campaign_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignUpdate'
+      responses:
+        '200':
+          description: Campaign updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete campaign
+      description: Delete a campaign
+      tags:
+        - Campaigns
+      parameters:
+        - name: campaign_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Campaign deleted successfully
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /campaigns/{campaign_id}/send:
+    post:
+      summary: Send campaign
+      description: Send a campaign to recipients
+      tags:
+        - Campaigns
+      parameters:
+        - name: campaign_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Campaign sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Campaign sent successfully"
+                  campaign_id:
+                    type: string
+                    format: uuid
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ai/generate:
+    post:
+      summary: Generate content
+      description: Generate email content using AI
+      tags:
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerationRequest'
+      responses:
+        '200':
+          description: Content generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGenerationResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ai/improve:
+    post:
+      summary: Improve content
+      description: Improve existing email content using AI
+      tags:
+        - AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIImprovementRequest'
+      responses:
+        '200':
+          description: Content improved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGenerationResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+        - first_name
+        - last_name
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+        password:
+          type: string
+          minLength: 8
+          description: User password
+        first_name:
+          type: string
+          description: User first name
+        last_name:
+          type: string
+          description: User last name
+        company_name:
+          type: string
+          description: Company name
+        industry:
+          type: string
+          description: Industry
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    TokenRefresh:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company_name:
+          type: string
+        industry:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        subscription:
+          type: string
+          enum: [free, pro, enterprise]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, sending, sent, paused]
+        recipient_count:
+          type: integer
+        sent_count:
+          type: integer
+        opened_count:
+          type: integer
+        clicked_count:
+          type: integer
+        open_rate:
+          type: number
+          format: float
+        click_rate:
+          type: number
+          format: float
+        scheduled_at:
+          type: string
+          format: date-time
+        sent_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CampaignCreate:
+      type: object
+      required:
+        - name
+        - subject
+        - content
+      properties:
+        name:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+
+    CampaignUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, sending, sent, paused]
+        scheduled_at:
+          type: string
+          format: date-time
+
+    CampaignList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Campaign'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        total_pages:
+          type: integer
+
+    AIGenerationRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: Description of the email to generate
+        context:
+          type: string
+          description: Additional context for generation
+        tone:
+          type: string
+          enum: [professional, casual, friendly, formal]
+          description: Tone of the email
+        length:
+          type: string
+          enum: [short, medium, long]
+          description: Desired length of the email
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+          description: Template variables to include
+
+    AIImprovementRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Existing email content to improve
+        improvement_type:
+          type: string
+          enum: [grammar, tone, clarity, engagement]
+          description: Type of improvement to apply
+        suggestions:
+          type: boolean
+          description: Whether to include improvement suggestions
+
+    AIGenerationResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Generated email content
+        subject:
+          type: string
+          description: Generated subject line
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Additional suggestions for improvement
+        confidence:
+          type: number
+          format: float
+          description: AI confidence score (0-1)
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Campaigns
+    description: Email campaign management
+  - name: AI
+    description: AI-powered content generation

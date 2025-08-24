@@ -15,19 +15,19 @@ Build **PulseQuill** - an enterprise-grade AI email campaign writer that orchest
 - **Performance**: Lighthouse ≥ 90, bundle < 500KB, TTI < 3s
 
 ### **Backend Architecture**
-- **Framework**: FastAPI (Python 3.9+) with async/await
+- **Framework**: FastAPI (Python 3.11+) with async/await
 - **Database**: PostgreSQL 15 with SQLAlchemy 2.0 + pgvector
 - **Cache**: Redis for sessions, caching, rate limiting
-- **AI Integration**: Multi-model orchestration (GPT-4, Claude, LangChain, CrewAI)
+- **AI Integration**: Multi-model orchestration (GPT-4, Claude, LangChain, LangGraph, CrewAI, LlamaIndex, AutoGen)
 - **Performance**: p95 < 200ms, complex queries < 50ms
 - **Security**: JWT auth, bcrypt, rate limiting, CORS
 
 ### **Data Architecture**
-- **Primary Database**: PostgreSQL with proper indexing
-- **Vector Store**: pgvector for embeddings and similarity search
+- **Primary Database**: PostgreSQL with pgvector extension for embeddings
 - **Caching Layer**: Redis with TTL policies
 - **Background Jobs**: Celery with Redis broker
 - **Real-time**: WebSocket connections for live analytics
+- **Vector Storage**: pgvector for brand voice similarity search
 
 ## 🎨 **Design System & UX**
 
@@ -73,11 +73,78 @@ def choose_model(task: str, complexity: str) -> str:
 1. **LLM Draft** → 2. **Style Lint** → 3. **Fact/URL Validator** → 4. **Compliance Footer** → 5. **Human Preview**
 
 ### **AI Frameworks Integration**
-- **LangChain**: Core workflow orchestration
-- **CrewAI**: Multi-agent collaboration (Strategist, Writer, Specialist, Manager)
-- **LangGraph**: Complex workflow management
-- **AutoGen**: Human-in-the-loop interactions
-- **LlamaIndex**: Knowledge base and document processing
+- **LangChain**: Core workflow orchestration, model selection, prompt management
+- **LangGraph**: Complex workflow management, quality gates, A/B testing orchestration
+- **CrewAI**: Multi-agent collaboration (Strategist, Writer, Brand Specialist, Manager)
+- **LlamaIndex**: Knowledge base and document processing, RAG for brand guidelines
+- **AutoGen**: Human-in-the-loop interactions and approvals
+- **pgvector**: Vector embeddings for brand voice similarity search
+
+### **AI Framework Selection Matrix**
+```python
+# Framework selection based on task complexity
+def select_framework(task: str, complexity: str, requires_rag: bool) -> dict:
+    if complexity == "simple":
+        return {"primary": "langchain", "supporting": []}
+    elif complexity == "complex" and requires_rag:
+        return {"primary": "crewai", "supporting": ["llamaindex", "langgraph"]}
+    elif complexity == "workflow":
+        return {"primary": "langgraph", "supporting": ["langchain"]}
+    elif requires_human_review:
+        return {"primary": "autogen", "supporting": ["langchain"]}
+    else:
+        return {"primary": "langchain", "supporting": []}
+```
+
+## 📚 **Copy Corpus & Vector Operations**
+
+### **pgvector Integration**
+- **Embedding Dimension**: 1536 (OpenAI embedding size)
+- **Similarity Search**: Cosine similarity for brand voice matching
+- **Performance**: < 100ms for similarity queries
+- **Indexing**: HNSW index for fast approximate nearest neighbor search
+
+### **Copy Corpus Management**
+```python
+# Copy corpus operations
+class CopyCorpusService:
+    async def add_entry(self, content: str, copy_type: str, performance_score: str = None):
+        # Generate embedding using OpenAI
+        embedding = await self.generate_embedding(content)
+        # Store in pgvector with metadata
+        return await self.store_with_embedding(content, embedding, copy_type, performance_score)
+    
+    async def find_similar(self, query: str, limit: int = 10, min_score: float = 0.7):
+        # Generate query embedding
+        query_embedding = await self.generate_embedding(query)
+        # Search pgvector for similar content
+        return await self.vector_search(query_embedding, limit, min_score)
+```
+
+### **Brand Voice Consistency**
+- **Vector Similarity**: Match new content against historical high-performing copy
+- **Performance Tracking**: Store engagement metrics with copy entries
+- **Automatic Tagging**: Categorize copy by type, performance, and brand voice
+- **Recommendation Engine**: Suggest similar high-performing content
+
+## 🎨 **Template Management (Mustache.js)**
+
+### **Dynamic Templating**
+```javascript
+// Template rendering with Mustache.js
+const template = "Hello {{first_name}}, welcome to {{company_name}}!";
+const variables = {
+  first_name: "John",
+  company_name: "Acme Corp"
+};
+const rendered = Mustache.render(template, variables);
+```
+
+### **Template Features**
+- **Variable Validation**: Ensure all required variables are provided
+- **Preview Mode**: Render templates with sample data
+- **Category Management**: Organize templates by use case
+- **Version Control**: Track template changes and performance
 
 ## 🔒 **Security & Compliance**
 
@@ -99,24 +166,19 @@ def choose_model(task: str, complexity: str) -> str:
 - **CAN-SPAM Compliance**: Unsubscribe links, sender identification
 - **SOC 2 Controls**: Security, availability, processing integrity
 
-### **Email Security**
-- **Authentication**: SPF, DKIM, DMARC configuration
-- **Deliverability**: Bounce handling, suppression lists
-- **Compliance**: Unsubscribe management, opt-out tracking
-
-## 📊 **Performance Requirements**
+## 📊 **Performance & Scalability**
 
 ### **Frontend Performance**
-- **Lighthouse Score**: ≥ 90 across all metrics
-- **Bundle Size**: Initial bundle < 500KB
+- **Bundle Size**: < 500KB initial bundle
 - **Time to Interactive**: < 3 seconds
-- **Core Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- **Lighthouse Score**: ≥ 90 across all metrics
+- **Core Web Vitals**: Optimized for LCP, FID, CLS
 
 ### **Backend Performance**
-- **API Response Time**: p95 < 200ms
-- **Database Queries**: Complex queries < 50ms
-- **Background Jobs**: Celery worker processing
-- **Caching**: Redis with appropriate TTL policies
+- **Response Time**: p95 < 200ms for API endpoints
+- **Database Queries**: < 50ms for complex operations
+- **AI Generation**: < 30 seconds for complex workflows
+- **Vector Search**: < 100ms for similarity queries
 
 ### **Email Delivery Performance**
 - **Delivery Rate**: > 98%
@@ -130,18 +192,37 @@ def choose_model(task: str, complexity: str) -> str:
 - **Unit Tests**: Component rendering, user interactions, state changes
 - **Integration Tests**: API integration, form submissions, navigation
 - **E2E Tests**: Playwright for critical user journeys
-- **Accessibility Tests**: axe-core for WCAG compliance
+- **Accessibility Tests**: Manual testing for WCAG compliance
+- **Performance Tests**: Lighthouse CI for performance monitoring
 
 ### **Backend Testing**
 - **Unit Tests**: Service layer, model validation, utility functions
 - **Integration Tests**: API endpoints, database operations, external services
 - **Performance Tests**: Load testing with k6, database query optimization
 - **Security Tests**: Authentication, authorization, input validation
+- **AI Tests**: Mock AI service responses, framework integration
+
+### **Load Testing (k6)**
+```javascript
+// k6 load testing scenarios
+export const options = {
+  stages: [
+    { duration: '2m', target: 100 }, // Ramp up
+    { duration: '5m', target: 100 }, // Sustained load
+    { duration: '2m', target: 0 },   // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<200'],
+    http_req_failed: ['rate<0.1'],
+  },
+};
+```
 
 ### **Test Coverage Requirements**
 - **Minimum Coverage**: ≥ 90% for both frontend and backend
 - **Critical Paths**: 100% coverage for authentication, payment, email sending
 - **Edge Cases**: Comprehensive error handling and boundary testing
+- **Load Testing**: CI integration with k6 for performance validation
 
 ## 🚀 **Deployment & DevOps**
 
@@ -154,12 +235,13 @@ def choose_model(task: str, complexity: str) -> str:
 ### **Backend Deployment**
 - **Platform**: Render with health checks
 - **Container**: Docker with multi-stage builds
-- **Database**: Managed PostgreSQL with automated backups
+- **Database**: Managed PostgreSQL with pgvector extension
 - **Monitoring**: Prometheus metrics, Grafana dashboards
 
 ### **CI/CD Pipeline**
 - **GitHub Actions**: Automated testing, linting, building
 - **Quality Gates**: Code coverage, security scanning, performance testing
+- **Load Testing**: k6 integration for performance validation
 - **Deployment**: Blue/green deployment for zero downtime
 - **Rollback**: Automatic rollback on health check failures
 
@@ -175,23 +257,24 @@ def choose_model(task: str, complexity: str) -> str:
 ### **Campaign Management**
 - Campaign creation wizard with AI assistance
 - Drag-and-drop email editor
-- Template management system
-- A/B testing framework
+- Template management system with Mustache.js
+- A/B testing framework with statistical significance
 - Campaign scheduling and automation
 
 ### **AI Content Generation**
 - Multi-model content generation (GPT-4, Claude)
-- Brand voice consistency enforcement
+- Brand voice consistency enforcement with pgvector
 - Subject line optimization
 - Content personalization
 - Performance prediction
+- Copy corpus integration
 
 ### **Analytics & Reporting**
 - Real-time campaign analytics
 - Email event tracking (send, deliver, open, click, bounce)
 - Performance dashboards
 - ROI calculation
-- Predictive analytics
+- Predictive analytics with vector similarity
 
 ### **Audience Management**
 - Contact list management
@@ -199,6 +282,12 @@ def choose_model(task: str, complexity: str) -> str:
 - Import/export functionality
 - Subscription management
 - GDPR compliance tools
+
+### **Load Testing & Performance**
+- k6 load testing scenarios (burst, sustained, webhook)
+- Performance monitoring and alerting
+- Capacity planning and scaling
+- Performance regression detection
 
 ## 🔧 **Technical Constraints**
 
@@ -212,53 +301,42 @@ def choose_model(task: str, complexity: str) -> str:
 - **Token Limits**: 2000 tokens per generation
 - **Response Time**: < 30 seconds for AI generation
 - **Error Handling**: Graceful degradation on API failures
+- **Vector Search**: < 100ms for similarity queries
 
 ### **Database Constraints**
 - **Connection Pooling**: Max 20 connections per instance
 - **Query Timeout**: 30 seconds maximum
 - **Index Optimization**: B-tree, GIN, and vector indexes
 - **Backup Strategy**: Daily automated backups
+- **pgvector**: HNSW index for fast similarity search
+
+### **Load Testing Constraints**
+- **k6 Scenarios**: Burst, sustained, and webhook testing
+- **Performance Thresholds**: p95 < 200ms, error rate < 5%
+- **CI Integration**: Automated load testing on main branch
+- **Monitoring**: Real-time performance metrics and alerting
 
 ## 🎯 **Success Criteria**
 
-### **Business Metrics**
-- **Copy Production Speed**: +300% improvement
-- **Email Deliverability**: > 98% success rate
-- **Open Rate Improvement**: +15-30% increase
-- **Time to Ship**: < 15 minutes from brief to send
+### **Performance Metrics**
+- **Frontend**: Lighthouse ≥ 90, TTI < 3s, bundle < 500KB
+- **Backend**: p95 < 200ms, AI generation < 30s, vector search < 100ms
+- **Email**: Delivery rate > 98%, bounce rate < 2%
+- **Load Testing**: All k6 scenarios pass performance thresholds
 
-### **Technical Metrics**
-- **System Uptime**: 99.9% availability
-- **API Performance**: p95 < 200ms response time
-- **Test Coverage**: ≥ 90% code coverage
-- **Security Score**: A+ rating on security scans
-
-### **User Experience Metrics**
-- **Lighthouse Score**: ≥ 90 across all metrics
+### **Quality Metrics**
+- **Test Coverage**: ≥ 90% for frontend and backend
+- **Security**: Pass security audits and compliance checks
 - **Accessibility**: WCAG AA compliance
-- **User Satisfaction**: > 4.5/5 rating
-- **Feature Adoption**: > 80% of users use AI features
+- **Reliability**: 99.9% uptime with graceful error handling
 
-## 📝 **Development Guidelines**
-
-### **Code Quality Standards**
-- **TypeScript**: Strict mode with comprehensive types
-- **Python**: Type hints, docstrings, comprehensive error handling
-- **Testing**: Unit, integration, and E2E tests
-- **Documentation**: Inline comments, API documentation, README files
-
-### **Git Workflow**
-- **Branch Strategy**: Feature branches from main
-- **Commit Messages**: Conventional commits format
-- **Pull Requests**: Required reviews, automated testing
-- **Release Process**: Semantic versioning, changelog generation
-
-### **Code Review Process**
-- **Review Requirements**: At least one approval required
-- **Quality Gates**: Automated testing, linting, security scanning
-- **Documentation**: Updated documentation for new features
-- **Performance**: Performance impact assessment
+### **Business Metrics**
+- **User Experience**: Intuitive interface with clear feedback
+- **Feature Completeness**: All MVP features implemented
+- **Scalability**: Support for enterprise-level usage
+- **Compliance**: Full GDPR, CAN-SPAM, SOC 2 compliance
 
 ---
 
-**This prompt declaration serves as the comprehensive guide for AI development of PulseQuill. All implementations must adhere to these specifications to ensure consistency, quality, and alignment with the project's enterprise-grade requirements.**
+**Last Updated**: December 2024
+**Version**: 2.0.0 - Updated to reflect current infrastructure with k6, pgvector, and advanced AI frameworks
